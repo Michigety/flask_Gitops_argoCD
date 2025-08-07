@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-health-check
+  labels:
+    app: flask-health-check
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask-health-check
+  template:
+    metadata:
+      labels:
+        app: flask-health-check
+    spec:
+      containers:
+      - name: flask-app
+        image: ghcr.io/your-username/flask-health-check:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: FLASK_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
