@@ -96,7 +96,7 @@ jobs:
 
     - name: Update Kustomize image
       run: |
-        cd deployment/k8s
+        cd deployment/k8s/base
         kustomize edit set image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.image_tag }}
 
     - name: Configure Git
