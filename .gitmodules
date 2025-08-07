@@ -1,0 +1,3 @@
+[submodule "flask_kustomize"]
+	path = flask_kustomize
+	url = https://github.com/Michigety/flask_kustomize.git
