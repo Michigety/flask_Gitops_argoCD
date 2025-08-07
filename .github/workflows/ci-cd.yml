@@ -88,7 +88,7 @@ jobs:
 
     - name: Update Development Kustomize image
       run: |
-        cd deployment/development
+        cd deployment/overlays/development
         IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
         kustomize edit set image ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${{ steps.version.outputs.version }}
 
@@ -101,7 +101,7 @@ jobs:
     - name: Commit and push development changes
       run: |
         cd deployment
-        git add development/
+        git add overlays/development/
         git diff --quiet && git diff --staged --quiet || (git commit -m "Update development image to version ${{ steps.version.outputs.version }}")
         git push origin main
 
@@ -133,7 +133,7 @@ jobs:
 
     - name: Update Production Kustomize image
       run: |
-        cd deployment/production
+        cd deployment/overlays/production
         IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
         kustomize edit set image ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${{ steps.version.outputs.version }}
 
@@ -146,6 +146,6 @@ jobs:
     - name: Commit and push production changes
       run: |
         cd deployment
-        git add production/
+        git add overlays/production/
         git diff --quiet && git diff --staged --quiet || (git commit -m "Update production image to version ${{ steps.version.outputs.version }}")
         git push origin main
