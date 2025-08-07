@@ -3,8 +3,6 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 env:
@@ -62,16 +60,52 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    # - name: Output image digest
-    #   run: echo "${{ steps.meta.outputs.tags }}" > image_tags.txt
+  update-development:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    permissions:
+      contents: write
+      packages: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    # - name: Upload image tags
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: image-tags
-    #     path: image_tags.txt
+    - name: Read VERSION file
+      id: version
+      run: |
+        VERSION=$(cat VERSION | tr -d '\n\r')
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Using version: ${VERSION}"
 
-  update-kustomize:
+    - name: Checkout deployment repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ secrets.DEPLOYMENT_REPO }}
+        token: ${{ secrets.DEPLOYMENT_TOKEN }}
+        path: deployment
+
+    - name: Update Development Kustomize image
+      run: |
+        cd deployment/development
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        kustomize edit set image ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${{ steps.version.outputs.version }}
+
+    - name: Configure Git
+      run: |
+        cd deployment
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Commit and push development changes
+      run: |
+        cd deployment
+        git add development/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update development image to version ${{ steps.version.outputs.version }}")
+        git push origin main
+
+  update-production:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -90,18 +124,6 @@ jobs:
         echo "version=${VERSION}" >> $GITHUB_OUTPUT
         echo "Using version: ${VERSION}"
 
-    # - name: Download image tags
-    #   uses: actions/download-artifact@v4
-    #   with:
-    #     name: image-tags
-
-    # - name: Get image tag
-    #   id: image-tag
-    #   run: |
-    #     IMAGE_TAG=$(cat image_tags.txt | head -n 1)
-    #     echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-    #     echo "Using image tag: ${IMAGE_TAG}"
-
     - name: Checkout deployment repository
       uses: actions/checkout@v4
       with:
@@ -109,9 +131,9 @@ jobs:
         token: ${{ secrets.DEPLOYMENT_TOKEN }}
         path: deployment
 
-    - name: Update Kustomize image
+    - name: Update Production Kustomize image
       run: |
-        cd deployment/base
+        cd deployment/production
         IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
         kustomize edit set image ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${{ steps.version.outputs.version }}
 
@@ -121,9 +143,9 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Commit and push changes
+    - name: Commit and push production changes
       run: |
         cd deployment
-        git add .
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update image to version ${{ steps.version.outputs.version }}")
+        git add production/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update production image to version ${{ steps.version.outputs.version }}")
         git push origin main
