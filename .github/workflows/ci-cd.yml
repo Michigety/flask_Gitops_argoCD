@@ -50,6 +50,19 @@ jobs:
           type=raw,value=${{ steps.version.outputs.version }}
           type=raw,value=latest,enable={{is_default_branch}}
 
+    - name: Check if image tag already exists
+      id: check-tag
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        TAG_EXISTS=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://ghcr.io/v2/${IMAGE_NAME_LOWER}/manifests/${VERSION} | jq -r '.errors[0].code')
+
+        if [ "$TAG_EXISTS" != "NAME_UNKNOWN" ] && [ "$TAG_EXISTS" != "MANIFEST_UNKNOWN" ]; then
+          echo "Image with tag '${VERSION}' already exists. Exiting workflow."
+          exit 1
+        fi
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
