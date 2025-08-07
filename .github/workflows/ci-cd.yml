@@ -55,7 +55,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Output image digest
-      run: echo ${{ steps.meta.outputs.tags }} > image_tags.txt
+      run: echo "${{ steps.meta.outputs.tags }}" > image_tags.txt
 
     - name: Upload image tags
       uses: actions/upload-artifact@v4
