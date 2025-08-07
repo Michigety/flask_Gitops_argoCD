@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: flask-health-check-prod
+  name: flask-health-check-dev
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/Michigety/flask_kustomize.git
     targetRevision: main
-    path: overlays/production
+    path: overlays/development
   destination:
     server: https://kubernetes.default.svc
-    namespace: production
+    namespace: development
   syncPolicy:
     automated:
       prune: true

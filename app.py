@@ -4,6 +4,14 @@ import os
 
 app = Flask(__name__)
 
+def get_version():
+    """VERSION 파일에서 버전 정보를 읽어옴"""
+    try:
+        with open("VERSION", "r") as f:
+            return f.read().strip()
+    except Exception:
+        return "unknown"
+
 @app.route('/health')
 def health_check():
     """헬스 체크 엔드포인트"""
@@ -11,7 +19,7 @@ def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "service": "flask-health-check",
-        "version": "1.0.0",
+        "version": get_version(),
         "environment": os.getenv("ENVIRONMENT", "development")
     }
     return jsonify(health_data), 200
